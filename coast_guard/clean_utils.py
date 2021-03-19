@@ -5,31 +5,25 @@ Patrick Lazarus, Feb. 14, 2012
 """
 import warnings
 import multiprocessing
-
 import numpy as np
 import scipy.stats
 import scipy.optimize
+from . import utils
+from . import config
+from . import errors
 
-import utils
-import config
-import errors
 
 # takes an archive and determines fractional zapping for each frequency channel
 def freq_fraczap(ar):
-    
-
 
     weights=np.bitwise_not(np.expand_dims(ar.get_weights(),2).astype(bool))
-    
 
     nsub, nchan,nbool = np.shape(weights)
-    
 
     weights = 1*weights    
     freqs=get_frequencies(ar)
     counts=np.sum(weights,axis=0).astype(float)/(1.*nsub)
 
-    
     out=[]
 
     for i in np.arange(nchan):
@@ -37,8 +31,9 @@ def freq_fraczap(ar):
         #val=[freqs[i],counts[i][0]]
         #out[i][0],out[i][1]=freqs[i],counts[i][0]
         #print out[i]
-    
+
     return out
+
 
 def get_subint_weights(ar):
     return ar.get_weights().sum(axis=1)
@@ -198,6 +193,7 @@ def fit_poly(ydata, xdata, order=1):
 
     return x, poly_ydata
 
+
 def detrend(ydata, xdata=None, order=1, bp=[], numpieces=None):
     """Detrend 'data' using a polynomial of given order.
 
@@ -272,6 +268,7 @@ def iterative_detrend(ydata, thresh=5, reset_mask=True, *args, **kwargs):
     if reset_mask:
         ymasked.mask = origmask
     return ymasked
+
 
 def get_profile(data):
     return np.sum(data, axis=0)
@@ -367,9 +364,10 @@ def get_frequencies(ar):
     integ = ar.get_first_Integration()
     nchan = ar.get_nchan()
     freqs = np.empty(nchan)
-    for ichan in xrange(nchan):
+    for ichan in range(nchan):
         freqs[ichan] = integ.get_Profile(0, ichan).get_centre_frequency()
     return freqs
+
 
 def get_subints(ar, remove_prof=False, use_weights=True):
     clone = ar.clone()
@@ -431,7 +429,7 @@ def fit_template(prof, template):
 
 def remove_profile1d(prof, isub, ichan, template, phs, return_params=False):
     rotated_template = fft_rotate(template, phs)
-    err = lambda (amp): amp*rotated_template - prof
+    err = lambda amp: amp*rotated_template - prof
     params, status = scipy.optimize.leastsq(err, [np.median(prof)/np.median(template)])
     #err = lambda (amp, base): amp*rotated_template + base - prof
     #params, status = scipy.optimize.leastsq(err, [max(prof)/max(template),
@@ -448,6 +446,7 @@ def remove_profile1d(prof, isub, ichan, template, phs, return_params=False):
             return (isub, ichan), err(params), params
         else:
             return (isub, ichan), err(params)
+
 
 def remove_profile(data, nsubs, nchans, template, nthreads=None):
     if nthreads is None:
@@ -692,10 +691,10 @@ def write_psrsh_script(arf, outfn=None):
     nsub, nchan = zapped.shape
     npairs = 0
     line = "zap such "
-    for isub in xrange(nsub):
+    for isub in range(nsub):
         if zapped_ints[isub]:
             continue
-        for ichan in xrange(nchan):
+        for ichan in range(nchan):
             if zapped_chans[ichan]:
                 continue
             if zapped[isub, ichan]:
@@ -709,6 +708,7 @@ def write_psrsh_script(arf, outfn=None):
         # Write file
         with open(outfn, 'w') as ff:
             ff.write("\n".join(lines))
+
 
 def write_ebpp_chan_zap_script(arf, outfn=None):
     """Write a psrsh script that applies the same channel zapping

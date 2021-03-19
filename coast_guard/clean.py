@@ -14,17 +14,16 @@ import os
 import tempfile
 import argparse
 import warnings
-
 import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
-
 from coast_guard import config
 from coast_guard import utils
 from coast_guard import clean_utils
 from coast_guard import errors
 from coast_guard import cleaners
 from coast_guard import colour
+
 
 def dummy(ar):
     """A do-nothing dummy cleaning function.
@@ -63,7 +62,7 @@ def clean_hotbins(ar, thresh=None, fscrunchfirst=None, onpulse=[]):
     offbin_indices = indices[offbins]
     for lobin, hibin in onpulse:
         offbins[lobin:hibin] = False
-  
+
     if fscrunchfirst:
         reference = ar.clone()
         reference.set_dispersion_measure(0)
@@ -117,11 +116,11 @@ def surgical_scrub(ar, chanthresh=None, subintthresh=None, binthresh=None):
     """
     import psrchive # Temporarily, because python bindings 
                     # are not available on all computers
-    
+
     patient = ar.clone()
     patient.pscrunch()
     patient.remove_baseline()
-    
+
     # Remove profile from dedispersed data
     patient.dedisperse()
     data = patient.get_data().squeeze()
@@ -129,18 +128,18 @@ def surgical_scrub(ar, chanthresh=None, subintthresh=None, binthresh=None):
     clean_utils.remove_profile_inplace(patient, template)
     # re-set DM to 0
     patient.dededisperse()
-    
+
     # Get weights
     weights = patient.get_weights()
     # Get data (select first polarization - recall we already P-scrunched)
     data = patient.get_data()[:,0,:,:]
     data = clean_utils.apply_weights(data, weights)
-   
+
     # Mask profiles where weight is 0
     mask_2d = np.bitwise_not(np.expand_dims(weights, 2).astype(bool))
     mask_3d = mask_2d.repeat(ar.get_nbin(), axis=2)
     data = np.ma.masked_array(data, mask=mask_3d)
-    
+
     # RFI-ectomy must be recommended by average of tests
     avg_test_results = clean_utils.comprehensive_stats(data, axis=2, \
                                 chanthresh=chanthresh, \
@@ -176,7 +175,7 @@ def power_wash(ar):
     bad_subints = []
     bad_pairs = []
     std_sub_vs_chan = np.std(data, axis=2)
-    print std_sub_vs_chan.shape
+    print(std_sub_vs_chan.shape)
     #mean_sub_vs_chan = np.mean(data, axis=2)
 
     # Identify bad sub-int/channel pairs
@@ -189,7 +188,7 @@ def power_wash(ar):
             plt.plot(std_sub_vs_chan[isub, :], 'k-')
             subint = clean_utils.scale_chans(std_sub_vs_chan[isub, :], \
                                                 chanweights=chanweights)
-            print clean_utils.get_hot_bins(subint)
+            print(clean_utils.get_hot_bins(subint))
             plt.subplot(2,1,2)
             plt.plot(subint, 'r-')
             plt.title("Subint #%d" % isub)
@@ -198,12 +197,12 @@ def power_wash(ar):
             plt.plot(std_sub_vs_chan[:, ichan], 'k-')
             chan = clean_utils.scale_subints(std_sub_vs_chan[:, ichan], \
                                                 subintweights=subintweights)
-            print clean_utils.get_hot_bins(chan)
+            print(clean_utils.get_hot_bins(chan))
             plt.subplot(2,1,2)
             plt.plot(chan, 'r-')
             plt.title("Chan #%d" % ichan)
             plt.show() 
-    
+
     chanstds = np.sum(std_sub_vs_chan, axis=0)
     plt.subplot(2,1,1)
     plt.plot(chanstds)
@@ -217,14 +216,14 @@ def power_wash(ar):
 def deep_clean(toclean, chanthresh=None, subintthresh=None, binthresh=None):
     import psrchive # Temporarily, because python bindings 
                     # are not available on all computers
-    
+
     if chanthresh is None:
         chanthresh = config.cfg.clean_chanthresh
     if subintthresh is None:
         subintthresh = config.cfg.clean_subintthresh
     if binthresh is None:
         binthresh = config.cfg.clean_binthresh
-   
+
     ar = toclean.clone()
 
     ar.pscrunch()
@@ -267,7 +266,7 @@ def deep_clean(toclean, chanthresh=None, subintthresh=None, binthresh=None):
 
     badsubints = np.concatenate((np.argwhere(np.abs(subintmeans) >= subintthresh), \
                                     np.argwhere(np.abs(subintstds) >= subintthresh)))
-    
+
     if config.debug.CLEAN:
         plt.subplots_adjust(hspace=0.4)
         chanax = plt.subplot(4,1,1)
@@ -276,14 +275,14 @@ def deep_clean(toclean, chanthresh=None, subintthresh=None, binthresh=None):
         plt.axhline(-chanthresh, c='k', ls='--')
         plt.xlabel('Channel Number', size='x-small')
         plt.ylabel('Average', size='x-small')
-        
+
         plt.subplot(4,1,2, sharex=chanax)
         plt.plot(np.arange(len(chanstds)), chanstds, 'k-')
         plt.axhline(chanthresh, c='k', ls='--')
         plt.axhline(-chanthresh, c='k', ls='--')
         plt.xlabel('Channel Number', size='x-small')
         plt.ylabel('Standard Deviation', size='x-small')
-        
+
         subintax = plt.subplot(4,1,3)
         plt.plot(np.arange(len(subintmeans)), subintmeans, 'k-')
         plt.axhline(subintthresh, c='k', ls='--')
@@ -305,7 +304,7 @@ def deep_clean(toclean, chanthresh=None, subintthresh=None, binthresh=None):
         utils.print_info("De-weighting subint# %d" % isub, 3)
         clean_utils.zero_weight_subint(ar, isub)
         clean_utils.zero_weight_subint(toclean, isub)
-    
+
     # Re-dedisperse the data
     ar.dedisperse()
 
@@ -322,10 +321,10 @@ def clean_simple(ar, timethresh=1.0, freqthresh=3.0):
     chan_stats = get_chan_stats(ar)
 
     for isub in np.argwhere(subint_stats >= timethresh):
-        print "De-weighting subint# %d" % isub
+        print("De-weighting subint# {0}".format(isub))
         zero_weight_subint(ar, isub)
     for ichan in np.argwhere(chan_stats >= freqthresh):
-        print "De-weighting chan# %d" % ichan
+        print("De-weighting chan# {0}".format(ichan))
         zero_weight_chan(ar, ichan)
 
 
@@ -335,7 +334,7 @@ def clean_iterative(ar, threshold=2.0):
         # Get stats for subints
         subint_stats = get_subint_stats(ar)
         worst_subint = np.argmax(subint_stats)
-        
+
         # Get stats for chans
         chan_stats = get_chan_stats(ar)
         worst_chan = np.argmax(chan_stats)
@@ -346,24 +345,24 @@ def clean_iterative(ar, threshold=2.0):
             break
         else:
             if subint_stats[worst_subint] > chan_stats[worst_chan]:
-                print "De-weighting subint# %d" % worst_subint
+                print("De-weighting subint# {0}".format(worst_subint))
                 zero_weight_subint(ar, worst_subint)
             else:
-                print "De-weighting chan# %d" % worst_chan
+                print("De-weighting chan# {0}".format(worst_chan))
                 zero_weight_chan(ar, worst_chan)
-        plot(ar, "bogus_%d" % ii)
+        plot(ar, "bogus_{0}".format(ii))
         ii += 1
 
 
 def prune_band(infn, response=None):
     """Prune the edges of the band. This is useful for
         removing channels where there is no response.
-        The file is modified in-place. However, zero-weighting 
+        The file is modified in-place. However, zero-weighting
         is used for pruning, so the process is reversible.
 
         Inputs:
             infn: name of file to trim.
-            response: A tuple specifying the range of frequencies 
+            response: A tuple specifying the range of frequencies
                 outside of which should be de-weighted.
 
         Outputs:
@@ -442,7 +441,7 @@ def remove_bad_subints(infn, badsubints=None, badsubint_intervals=None):
             badchans: A list of subints to remove 
             badchan_intervals: A list of subint intervals 
                 (inclusive) to remove
-    
+
         Outputs:
             None
     """
@@ -462,26 +461,26 @@ def remove_bad_subints(infn, badsubints=None, badsubint_intervals=None):
         utils.execute("paz -m %s %s" % (" ".join(zaplets), infn.fn))
 
 
-def remove_bad_channels(infn, badchans=None, badchan_intervals=None, 
+def remove_bad_channels(infn, badchans=None, badchan_intervals=None,
                             badfreqs=None, badfreq_intervals=None):
     """Zero-weight bad channels and channels containing bad
         frequencies.
-        The file is modified in-place. However, zero-weighting 
+        The file is modified in-place. However, zero-weighting
         is used for trimming, so the process is reversible.
 
         Note: Channels are indexed starting at 0.
 
         Inputs:
             infn: name of time to remove channels from.
-            badchans: A list of channels to remove 
-            badchan_intervals: A list of channel intervals 
+            badchans: A list of channels to remove
+            badchan_intervals: A list of channel intervals
                 (inclusive) to remove
             badfreqs: A list of frequencies. The channels
                 containing these frequencies will be removed.
             badfreq_intervals: A list of frequency ranges 
                 to remove. The channels containing these
                 frequencies will be removed.
-    
+
         Outputs:
             None
     """
@@ -512,20 +511,20 @@ def remove_bad_channels(infn, badchans=None, badchan_intervals=None,
 def clean_archive(inarf, outfn, clean_re=None, *args, **kwargs):
     import psrchive # Temporarily, because python bindings 
                     # are not available on all computers
-    
+
     if clean_re is None:
         clean_re = config.cfg.clean_strategy
     try:
         outfn = utils.get_outfn(outfn, inarf)
         shutil.copy(inarf.fn, outfn)
-        
+
         outarf = utils.ArchiveFile(outfn)
- 
+
         trim_edge_channels(outarf)
         prune_band(outarf)
         remove_bad_channels(outarf)
         remove_bad_subints(outarf)
-        
+
         matching_cleaners = [clnr for clnr in cleaners if clean_re and re.search(clean_re, clnr)]
         if len(matching_cleaners) == 1:
             ar = psrchive.Archive_load(outarf.fn)
@@ -549,26 +548,25 @@ def clean_archive(inarf, outfn, clean_re=None, *args, **kwargs):
 
 
 def main():
-    print ""
-    print "         clean.py"
-    print "     Patrick  Lazarus"
-    print ""
+    print("")
+    print("         clean.py")
+    print("     Patrick  Lazarus")
+    print("")
     file_list = args.files + args.from_glob
     to_exclude = args.excluded_files + args.excluded_by_glob
     to_clean = utils.exclude_files(file_list, to_exclude)
-    print "Number of input files: %d" % len(to_clean)
-    
-    
+    print("Number of input files: {0}".format(len(to_clean)))
+
     # Read configurations
     for infn in to_clean:
         inarf = utils.ArchiveFile(infn)
         config.cfg.load_configs_for_archive(inarf)
         outfn = utils.get_outfn(args.outfn, inarf)
         shutil.copy(inarf.fn, outfn)
-        
+
         outarf = utils.ArchiveFile(outfn)
         ar = outarf.get_archive()
-        
+
         try:
             for name, cfgstrs in args.cleaner_queue:
                 # Set up the cleaner
@@ -584,9 +582,9 @@ def main():
             raise
         finally:
             ar.unload(outfn)
-            print "Cleaned archive: %s" % outfn
-        
-    
+            print("Cleaned archive: {0}".format(outfn))
+
+
 class CleanerArguments(utils.DefaultArguments):
     def __init__(self, *args, **kwargs):
         super(CleanerArguments, self).__init__(add_help=False, \
@@ -598,14 +596,16 @@ class CleanerArguments(utils.DefaultArguments):
                                 "with the name of a cleaner, display "
                                 "its help.")
 
+
     class HelpAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             if values is None:
                 parser.print_help()
             else:
                 cleaner = cleaners.load_cleaner(values)
-                print cleaner.get_help(full=True)
+                print(cleaner.get_help(full=True))
             sys.exit(1)
+
 
     class ListCleanersAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
@@ -613,14 +613,16 @@ class CleanerArguments(utils.DefaultArguments):
                             bold=True, underline=True) 
             for name in sorted(cleaners.registered_cleaners):
                 cleaner = cleaners.load_cleaner(name)
-                print cleaner.get_help()
+                print(cleaner.get_help())
             sys.exit(1)
+
 
     class AppendCleanerAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             # Append the name of the cleaner and an empty list for
             # configuration strings
             getattr(namespace, self.dest).append((values, []))
+
 
     class ConfigureCleanerAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):

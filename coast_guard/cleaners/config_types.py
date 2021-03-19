@@ -1,6 +1,3 @@
-import types
-
-
 class BaseConfigType(object):
     """The base class of ConfigType objects.
 
@@ -10,8 +7,10 @@ class BaseConfigType(object):
     name = NotImplemented
     description = None
 
+
     def __init__(self, nullable=False):
         self.nullable = nullable
+
 
     def get_param_value(self, paramstr):
         """Parse a parameter string.
@@ -27,6 +26,7 @@ class BaseConfigType(object):
         else:
             return self._string_to_value(paramstr)
 
+
     def _string_to_value(self, paramstr):
         """Parse a parameter string.
 
@@ -39,6 +39,7 @@ class BaseConfigType(object):
         raise NotImplementedError('The method _string_to_value(...) of '
                                   'ConfigType objects must be implemented '
                                   'by its subclases.')
+
 
     def normalize_param_string(self, paramstr):
         """Return a normalized version of the parameter string.
@@ -55,6 +56,7 @@ class BaseConfigType(object):
         else:
             return self._value_to_string(val)
 
+
     def get_help(self):
         helpstr = 'Type: %s' % self.name.strip()
         if self.description is not None:
@@ -67,11 +69,13 @@ class IntVal(BaseConfigType):
     """
     name = 'int'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a normal integer value.
            The previous parameter value is ignored.
         """
         return int(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -84,11 +88,13 @@ class FloatVal(BaseConfigType):
     """
     name = 'float'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a normal floating-point value.
            The previous parameter value is ignored.
         """
         return float(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -101,6 +107,7 @@ class BoolVal(BaseConfigType):
     """
     name = 'bool'
     description = 'The following values are recognised (case insensitive): true, 1, y, yes, false, 0, n, no'
+
 
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a boolean value. The following values
@@ -118,6 +125,7 @@ class BoolVal(BaseConfigType):
                              'values are allowed: true, 1, y, yes, '
                              'false, 0, n, no' % paramstr)
         return boolval
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -153,8 +161,10 @@ class IntList(BaseConfigType):
     name = 'list of integers'
     description = 'an integer list <int>[;<int>...]'
 
+
     def _string_to_value(self, paramstr):
         return _str_to_intlist(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -168,6 +178,7 @@ class IntListList(BaseConfigType):
     name = 'list of integer lists'
     description = 'an integer list <int>[;<int>...][;;<int>[;<int>...]...]'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a list of integer lists. The format must
            be <int>[;<int>...][;;<int>[;<int>...]...].
@@ -179,6 +190,7 @@ class IntListList(BaseConfigType):
                 liststr, sep, remainder = remainder.partition(';;')
                 intlists.append(_str_to_intlist(liststr))
         return intlists
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -195,6 +207,7 @@ class IntPairList(BaseConfigType):
     name = 'list of integer pairs'
     description = 'a list of integer pairs <int>:<int>[;<int>:<int>...].'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a list of integer pairs. The format must
            be <int>:<int>[;<int>:<int>...].
@@ -205,6 +218,7 @@ class IntPairList(BaseConfigType):
             return [_str_to_int_pair(ss) for ss in pairstrs]
         else:
             return []
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -217,6 +231,7 @@ class IntOrIntPairList(BaseConfigType):
     """
     name = 'list of integer-or-integer-pairs'
     description = 'a list of integers or integer pairs (<int>|<int>:<int>)[;(<int>|<int>:<int>)...].'
+
 
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a list of integer-or-integer-pairs. The format
@@ -232,10 +247,11 @@ class IntOrIntPairList(BaseConfigType):
                     val.append(int(element))
         return val
 
+
     def _value_to_string(self, val):
         strs = []
         for el in val:
-            if type(el) is types.TupleType:
+            if type(el) is tuple:
                 strs.append("%d:%d" % el)
             else:
                 strs.append("%d" % el)
@@ -270,8 +286,10 @@ class FloatList(BaseConfigType):
     name = 'list of floats'
     description = 'an float list <float>[;<float>...]'
 
+
     def _string_to_value(self, paramstr):
         return _str_to_floatlist(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -285,11 +303,13 @@ class FloatPair(BaseConfigType):
     name = 'a float pair'
     description = 'a pair of floats <float>:<float>.'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a pair of floats. The format must
            be <float>:<float>.
         """
         return _str_to_float_pair(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -303,6 +323,7 @@ class FloatPairList(BaseConfigType):
     name = 'list of float pairs'
     description = 'a list of float pairs <float>:<float>[;<float>:<float>...].'
 
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a list of float pairs. The format must
            be <float>:<float>[;<float>:<float>...].
@@ -313,6 +334,7 @@ class FloatPairList(BaseConfigType):
             return [_str_to_float_pair(ss) for ss in pairstrs]
         else:
             return []
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.
@@ -325,6 +347,7 @@ class FloatOrFloatPairList(BaseConfigType):
     """
     name = 'list of float-or-float-pairs'
     description = 'a list of floats or float pairs (<float>|<float>:<float>)[;(<float>|<float>:<float>)...].'
+
 
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a list of float-or-float-pairs. The format
@@ -340,10 +363,11 @@ class FloatOrFloatPairList(BaseConfigType):
                     val.append(float(element))
         return val
 
+
     def _value_to_string(self, val):
         strs = []
         for el in val:
-            if type(el) is types.TupleType:
+            if type(el) is tuple:
                 strs.append('%g:%g' % el)
             else:
                 strs.append('%g' % el)
@@ -354,6 +378,8 @@ class FloatOrFloatPairList(BaseConfigType):
 class StrVal(BaseConfigType):
     name = "A string"
     description = "A string"
+
+
     def _string_to_value(self, paramstr):
         """Parse 'paramstr' as a normal string value.
            The previous parameter value is ignored.
@@ -362,6 +388,7 @@ class StrVal(BaseConfigType):
             return None
         else:
             return str(paramstr)
+
 
     def _value_to_string(self, val):
         """Return a normalized version of the value.

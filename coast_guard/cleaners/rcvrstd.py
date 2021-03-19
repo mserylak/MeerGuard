@@ -1,4 +1,3 @@
-import types
 import numpy as np
 from coast_guard import config
 from coast_guard import cleaners
@@ -122,7 +121,7 @@ class ReceiverBandCleaner(cleaners.BaseCleaner):
         """
         if self.configs.badsubints:
             for tozap in self.configs.badsubints:
-                if type(tozap) is types.IntType:
+                if type(tozap) is int:
                     clean_utils.zero_weight_subint(ar, tozap)
                 else:
                     losubint, hisubint = tozap
@@ -144,7 +143,7 @@ class ReceiverBandCleaner(cleaners.BaseCleaner):
         if self.configs.badchans:
             nremoved = 0
             for tozap in self.configs.badchans:
-                if type(tozap) is types.IntType:
+                if type(tozap) is int:
                     # A single bad channel to zap
                     clean_utils.zero_weight_chan(ar, tozap)
                     nremoved += 1
@@ -168,7 +167,7 @@ class ReceiverBandCleaner(cleaners.BaseCleaner):
                 hifreqs[ichan] = ctr + chanbw / 2.0
 
             for tozap in self.configs.badfreqs:
-                if type(tozap) is types.FloatType:
+                if type(tozap) is float:
                     # A single bad freq to zap
                     for ichan in np.argwhere((lofreqs <= tozap) & (hifreqs > tozap)):
                         ichan = ichan.squeeze()

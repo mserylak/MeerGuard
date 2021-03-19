@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
-# For python3 and python2 compatibility
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
-
-# Import CoastGuard
 from coast_guard import cleaners
 import argparse
 import psrchive as ps
 import os
+
 
 def apply_surgical_cleaner(ar, tmp, cthresh=5.0, sthresh=5.0, plot=False):
     print("Applying the surgical cleaner")
@@ -20,7 +16,6 @@ def apply_surgical_cleaner(ar, tmp, cthresh=5.0, sthresh=5.0, plot=False):
     surgical_cleaner.parse_config_string(surgical_parameters)
     surgical_cleaner.run(ar)
 
-    
 
 if __name__ == "__main__":
     # Parse some arguments to set up cleaning
@@ -33,7 +28,6 @@ if __name__ == "__main__":
     parser.add_argument("-plot", "--plot", dest='plot', action='store_true', default=False)
     parser.add_argument("-O", "--outpath", type=str, dest="output_path", help="Output path [default = CWD]", default=os.getcwd())
     args = parser.parse_args()
-
 
     # Load an Archive file
     loaded_archive = ps.Archive_load(args.archive_path)
@@ -48,10 +42,8 @@ if __name__ == "__main__":
     else:
         out_name = args.output_name
 
-
     apply_surgical_cleaner(loaded_archive, args.template_path, cthresh=args.chan_thresh, sthresh=args.subint_thresh, plot=args.plot)
 
     # Unload the Archive file
     print("Unloading the cleaned archive: {0}".format(out_name))
     loaded_archive.unload(str(out_name))  # need to typecast to str here because otherwise Python converts to a unicode string which the PSRCHIVE library can't parse
-

@@ -4,9 +4,8 @@ for the CoastGuard timing pipeline.
 
 Patrick Lazarus, Nov. 10, 2011
 """
-
-import colour
-import log
+from . import colour
+from . import log
 
 
 class CoastGuardError(Exception):
@@ -15,8 +14,10 @@ class CoastGuardError(Exception):
             log.log(msg, 'error')
         super(CoastGuardError, self).__init__(msg)
 
+
     def __str__(self):
         return colour.cstring(super(CoastGuardError, self).__str__(), 'error')
+
 
     def get_message(self):
         return super(CoastGuardError, self).__str__()
@@ -100,8 +101,10 @@ class FatalCoastGuardError(Exception):
         log.log(msg, 'critical')
         super(FatalCoastGuardError, self).__init__(msg)
 
+
     def __str__(self):
         return colour.cstring(super(FatalCoastGuardError, self).__str__(), 'error')
+
 
     def get_message(self):
         return super(FatalCoastGuardError, self).__str__()
@@ -120,4 +123,3 @@ class LoggedCoastGuardWarning(CoastGuardWarning):
     def __init__(self, msg):
         log.log(msg, 'warning')
         super(CoastGuardWarning, self).__init__(msg)
-

@@ -6,9 +6,9 @@ from coast_guard.cleaners import config_types
 from coast_guard import utils
 from scipy.optimize import leastsq
 from scipy.signal import savgol_filter
-
 # for the template, would be better to have it elsewhere and just get the numpy array here
 import psrchive
+
 
 class SurgicalScrubCleaner(cleaners.BaseCleaner):
     name = 'surgical'
@@ -121,28 +121,29 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
 
         print('Estimating template and profile phase offset')
         if self.configs.template is None:
-            phs = 0
+            phase_offset = 0
         else:
             # Calculate phase offset of template in number of bins, using full obs
             # Get profile data of full obs
             profile = np.apply_over_axes(np.sum, data, tuple(range(data.ndim - 1))).squeeze()
             if np.shape(template_phs) != np.shape(profile):
-                print('template and profile have different numbers of phase bins')
+                print('Template and profile have different numbers of phase bins')
             #err = (lambda (amp, phs, base): amp*clean_utils.fft_rotate(template_phs, phs) + base - profile)
-            err = (lambda (amp, phs): amp*clean_utils.fft_rotate(template_phs, phs) - profile)
+            err = (lambda amp_phs: amp_phs[0]*clean_utils.fft_rotate(template_phs, amp_phs[1]) - profile)
             amp_guess = np.median(profile)/np.median(template_phs)
             phase_guess = -(np.argmax(profile) - np.argmax(template_phs))
+            amp_phs_guess = [amp_guess, phase_guess]
             #params, status = leastsq(err, [amp_guess, phase_guess, np.min(profile) - np.min(template_phs)])
-            params, status = leastsq(err, [amp_guess, phase_guess])
-            phs = params[1]
-            print('Template phase offset = {0}'.format(round(phs, 3)))
+            params, status = leastsq(err, amp_phs_guess)
+            phase_offset = params[1]
+            print('Template phase offset = {0}'.format(round(phase_offset, 3)))
 
         print('Removing profile from patient')
         if plot:
             preop_patient = patient.clone()
             preop_weights = preop_patient.get_weights()
-        clean_utils.remove_profile_inplace(patient, template, phs)
-       
+        clean_utils.remove_profile_inplace(patient, template, phase_offset)
+
         print('Accessing weights and applying to patient')
         # re-set DM to 0
         # patient.dededisperse()
@@ -156,14 +157,14 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             preop_data = preop_patient.get_data()[:,0,:,:]
             preop_patient = []  # clear for the sake of memory
             preop_data = clean_utils.apply_weights(preop_data, weights)
-        
+
         # Mask profiles where weight is 0
         mask_2d = np.bitwise_not(np.expand_dims(weights, 2).astype(bool))
         mask_3d = mask_2d.repeat(ar.get_nbin(), axis=2)
         data = np.ma.masked_array(data, mask=mask_3d)
         if plot:
             preop_data = np.ma.masked_array(preop_data, mask=mask_3d)        
- 
+
         print('Masking on-pulse region as determined from template')
         # consider residual only in off-pulse region
         if len(np.shape(template)) > 1:  # sum over frequencies
@@ -173,7 +174,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
         else:
             template_1D = template
         # Rotate template by apropriate amount
-        template_rot = clean_utils.fft_rotate(template_1D, phs).squeeze()
+        template_rot = clean_utils.fft_rotate(template_1D, phase_guess).squeeze()
         # masked_template = np.ma.masked_greater(template_rot, np.min(template_rot) + 0.01*np.ptp(template_rot))
         masked_template = np.ma.masked_greater(template_rot, np.median(template_rot))
         masked_std = np.ma.std(masked_template)
@@ -195,7 +196,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             for jj in range(0, np.shape(data)[1]):
                   data.mask[ii, jj, :] = masked_template.mask
         data = np.ma.masked_array(data, mask=data.mask)
-        
+
         if plot:
             plt.subplot(1, 2, 2)
             plt.plot(np.apply_over_axes(np.ma.sum, data, tuple(range(data.ndim - 1))).squeeze())
@@ -226,7 +227,8 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             # not the clone we've been working with.
             integ = ar.get_Integration(int(isub))
             integ.set_weight(int(ichan), 0.0)
-        
+
         freq_fraczap = clean_utils.freq_fraczap(ar)
+
 
 Cleaner = SurgicalScrubCleaner

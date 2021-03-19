@@ -3,17 +3,19 @@ import logging
 import stat
 
 
-levels = {'debug': logging.DEBUG, \
-          'info': logging.INFO, \
-          'warning': logging.WARNING, \
-          'error': logging.ERROR, \
+levels = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
           'critical': logging.CRITICAL}
 
 
-PERMS = {"w": stat.S_IWGRP,                 
-         "r": stat.S_IRGRP,                 
-         "x": stat.S_IXGRP}                 
-def add_group_permissions(fn, perms=""):    
+PERMS = {"w": stat.S_IWGRP,
+         "r": stat.S_IRGRP,
+         "x": stat.S_IXGRP}
+
+
+def add_group_permissions(fn, perms=""):
     mode = os.stat(fn)[stat.ST_MODE]
     for perm in perms:
         mode |= PERMS[perm]
@@ -48,11 +50,11 @@ def setup_logger(logfn):
     """
     logger = get_logger()
     # Remove any existing handlers
-    disconnect_logger() 
-    # What gets logged is determined by if-clauses that 
-    # check the current verbosity level and debugging state, 
-    # not logging's level, so let everything be logged. 
-    logger.setLevel(logging.DEBUG) 
+    disconnect_logger()
+    # What gets logged is determined by if-clauses that
+    # check the current verbosity level and debugging state,
+    # not logging's level, so let everything be logged.
+    logger.setLevel(logging.DEBUG)
     logfile = logging.FileHandler(filename=logfn)
     formatter = logging.Formatter(datefmt="%Y-%m-%d %H:%M:%S", \
                 fmt="%(levelname)s - %(asctime)s\n%(message)s\n")

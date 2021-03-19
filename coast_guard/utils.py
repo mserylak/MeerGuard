@@ -12,40 +12,39 @@ import glob
 import optparse
 import sys
 import subprocess
-import types
 import inspect
 import datetime
 import argparse
 import string
 import tempfile
 import stat
-
 import numpy as np
-
 from coast_guard import config
 from coast_guard import errors
 from coast_guard import colour
 from coast_guard import log
 
-header_param_types = {'freq': float, \
-                      'length': float, \
-                      'bw': float, \
-                      'chbw': float, \
-                      'mjd': float, \
-                      'intmjd': int, \
-                      'fracmjd': float, \
-                      'backend': str, \
-                      'rcvr': str, \
-                      'telescop': str, \
-                      'name': str, \
-                      'nchan': int, \
-                      'npol': int, \
-                      'nbin': int, \
-                      'nsub': int, \
-                      'tbin': float, \
-                      'period': float, \
-                      'dm': float, \
+
+header_param_types = {'freq': float,
+                      'length': float,
+                      'bw': float,
+                      'chbw': float,
+                      'mjd': float,
+                      'intmjd': int,
+                      'fracmjd': float,
+                      'backend': str,
+                      'rcvr': str,
+                      'telescop': str,
+                      'name': str,
+                      'nchan': int,
+                      'npol': int,
+                      'nbin': int,
+                      'nsub': int,
+                      'tbin': float,
+                      'period': float,
+                      'dm': float,
                       'pol_c': bool}
+
 
 site_to_telescope = {'1' : 'GBT',
                      'gt' : 'GBT',
@@ -231,6 +230,7 @@ site_to_telescope = {'1' : 'GBT',
                      'NDlfr': 'DE609',
                      'de609': 'DE609'}
 
+
 # A cache for pulsar J-names
 jname_cache = {}
 # A cache for pulsar preferred names
@@ -241,6 +241,7 @@ versionid_cache = {}
 __fluxcals = None
 # A cache for psrchive configurations
 __psrchive_configs = None
+
 
 def get_psrchive_configs():
     global __psrchive_configs
@@ -256,6 +257,7 @@ def get_psrchive_configs():
             key, val = line.split('=')
             __psrchive_configs[key.strip()] = val.strip()
     return __psrchive_configs
+
 
 def read_fluxcal_names(fluxcalfn=None):
     """Read names of flux calibrators from PSRCHIVE configuration
@@ -325,7 +327,7 @@ def show_progress(iterator, width=0, tot=None):
             curr += 1
         yield toreturn
     if config.show_progress:
-        print "Done"
+        print("Done")
 
 
 def set_warning_mode(mode=None, reset=True):
@@ -438,7 +440,7 @@ def normalise_parfile(par):
         Output:
             parfn: Name of (temporary) parfile.
     """
-    if isinstance(par, types.StringTypes):
+    if isinstance(par, bytes):
         # Assume input is
         if os.path.isfile(par):
             # Assume input is par filename
@@ -454,7 +456,7 @@ def normalise_parfile(par):
                 if line.strip() and ("TZ" not in line)
                     and (not line.startswith("TN"))
                     and (not line.startswith("JUMP"))]
-    
+
     # Make a temporary file for the parfile
     tmpfd, tmpfn = tempfile.mkstemp(suffix='.par', dir=config.tmp_directory)
     tmpfile = os.fdopen(tmpfd, 'w')
@@ -512,7 +514,7 @@ def get_version_id(db):
         cmd = ["psrchive", "--version"]
         stdout, stderr = execute(cmd)
         psrchive_githash = stdout.strip()
-  
+
     if (coastguard_githash, psrchive_githash) in versionid_cache:
         version_id = versionid_cache[(coastguard_githash, psrchive_githash)]
     else:
@@ -707,29 +709,29 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
 
     stdoutfile = False
     stderrfile = False
-    if type(stdout) == types.StringType:
+    if type(stdout) == bytes:
         stdout = open(stdout, 'w')
         stdoutfile = True
-    if type(stderr) == types.StringType:
+    if type(stderr) == bytes:
         stderr = open(stderr, 'w')
         stderrfile = True
-    
+
     # Run (and time) the command. Check for errors.
-    if type(cmd) == types.StringType:
+    if type(cmd) == bytes:
         shell=True
     else:
         shell=False
     pipe = subprocess.Popen(cmd, shell=shell, cwd=dir, \
                             stdout=stdout, stderr=subprocess.PIPE)
     (stdoutdata, stderrdata) = pipe.communicate()
-    
+
     # Close file objects, if any
     if stdoutfile:
         stdout.close()
     if stderrfile:
         stderr.write(stderrdata)
         stderr.close()
-    
+
     retcode = pipe.returncode
     if retcode < 0:
         raise errors.SystemCallError("Execution of command (%s) " \
@@ -789,11 +791,10 @@ def group_subints(infns):
         groups_dict.setdefault(dir, set()).add(fn)
 
     # Determine intersection of all subbands
-    intersection = set.intersection(*groups_dict.values())
-    union = set.union(*groups_dict.values())
-    
-    print "Number of subints not present in all subbands: %s" % \
-                len(union-intersection)
+    intersection = set.intersection(*list(groups_dict.values()))
+    union = set.union(*list(groups_dict.values()))
+
+    print("Number of subints not present in all subbands: {0}".format(len(union-intersection)))
 
     subbands_dict = {}
     for infn in infns:
@@ -856,13 +857,13 @@ def get_mode(vals):
         counts[val] = 1+count
 
     maxcount = max(counts.values())
-    for key in counts.keys():
+    for key in list(counts.keys()):
         if counts[key] == maxcount:
             return key, counts[key]
 
 
 def group_subbands(infns):
-    """Group subband files according to their base filename 
+    """Group subband files according to their base filename
         (i.e. ignoring their extension).
 
         Input:
@@ -924,7 +925,7 @@ def get_flux_density(name):
                         name, \
                         errors.CoastGuardWarning)
         fluxes = []
-    
+
     if len(fluxes) == 1:
         if len(fluxes[0]) != 3:
             raise ValueError("There aren't 3 elements returned by psrcat when looking for S1400 for %s:\n%s" % (search, fluxes))
@@ -957,7 +958,7 @@ def get_spectral_index(name):
     if not name[0] in ('J', 'B') and len(name)==7:
         # Could be B-name, or truncated J-name. Add wildcard at end just in case.
         search += '*'
-    try:   
+    try:
         cmd = ['psrcat', '-nohead', '-nonumber', '-c', 'SPINDX', \
                         '-o', 'short', '-null', '', search]
         stdout, stderr = execute(cmd)
@@ -969,7 +970,7 @@ def get_spectral_index(name):
                         "to get prefname for '%s'" % name, \
                         errors.CoastGuardWarning)
         spinds = []
-    
+
     if len(spinds) == 1:
         spindex = spinds[0]
     elif len(spinds) == 0:
@@ -996,7 +997,7 @@ def get_jname(name):
             jname: J-name of the pulsar.
     """
     global jname_cache
-        
+
     # Strip '_R' tail if present. It is added back on just before
     # returning the J-name
     if name.endswith("_R"):
@@ -1027,7 +1028,7 @@ def get_jname(name):
                             "to get J-name for '%s'" % srcname, \
                             errors.CoastGuardWarning)
             names = []
-    
+
         if len(names) == 1:
             jname = names[0][-1]
         elif len(names) == 0:
@@ -1057,7 +1058,7 @@ def get_prefname(name):
             prefname: Preferred name of the pulsar.
     """
     global prefname_cache
-        
+
     # Strip '_R' tail if present. It is added back on just before
     # returning the preferred name
     if name.endswith("_R"):
@@ -1076,7 +1077,7 @@ def get_prefname(name):
         if not srcname[0] in ('J', 'B') and len(srcname)==7:
             # Could be B-name, or truncated J-name. Add wildcard at end just in case.
             search += '*'
-        try:   
+        try:
             cmd = ['psrcat', '-nohead', '-nonumber', '-c', 'PSRJ PSRB', \
                             '-o', 'short', '-null', '', search]
             stdout, stderr = execute(cmd)
@@ -1088,7 +1089,7 @@ def get_prefname(name):
                             "to get prefname for '%s'" % srcname, \
                             errors.CoastGuardWarning)
             names = []
-    
+
         if len(names) == 1:
             prefname = names[0][-1]
         elif len(names) == 0:
@@ -1270,7 +1271,7 @@ def sort_by_keys(tosort, keys):
         else:
             rev = False
             print_info("Sorting by %s..." % sortkey, 2)
-        if type(tosort[0][sortkey]) is types.StringType:
+        if type(tosort[0][sortkey]) is bytes:
             tosort.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
         else:
             tosort.sort(key=lambda x: x[sortkey], reverse=rev)
@@ -1279,6 +1280,8 @@ def sort_by_keys(tosort, keys):
 PERMS = {"w": stat.S_IWGRP,
          "r": stat.S_IRGRP,
          "x": stat.S_IXGRP}
+
+
 def add_group_permissions(fn, perms=""):
     mode = os.stat(fn)[stat.ST_MODE]
     for perm in perms:
@@ -1293,10 +1296,10 @@ class ArchiveFile(object):
         if not os.path.isfile(self.fn):
             raise errors.BadFile("Archive file could not be found (%s)!" % \
                                  self.fn)
-        
-        self.hdr = get_header_vals(self.fn, ['freq', 'length', 'bw', 'mjd', 
-                                            'intmjd', 'fracmjd', 'backend', 
-                                            'rcvr', 'telescop', 'name', 
+
+        self.hdr = get_header_vals(self.fn, ['freq', 'length', 'bw', 'mjd',
+                                            'intmjd', 'fracmjd', 'backend',
+                                            'rcvr', 'telescop', 'name',
                                             'nchan', 'period', 'dm',
                                             'nsub', 'nbin', 'npol',
                                             'ra', 'dec'])
@@ -1328,12 +1331,13 @@ class ArchiveFile(object):
             decstr = "+%s" % decstr
         self.hdr['coords'] = "%s%s" % (rastr, decstr)
 
+
     def __getitem__(self, key):
         filterfunc = lambda x: x # A do-nothing filter
-        if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
+        if (type(key) in (type('str'), type('str'))) and key.endswith("_L"):
             filterfunc = string.lower
             key = key[:-2]
-        elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
+        elif (type(key) in (type('str'), type('str'))) and key.endswith("_U"):
             filterfunc = string.upper
             key = key[:-2]
         if key not in self.hdr:
@@ -1349,16 +1353,18 @@ class ArchiveFile(object):
                 except:
                     raise errors.CoastGuardError("Parameter '%s' is not " \
                             "recognized. Valid keys are '%s'" % \
-                            (key, "', '".join([str(xx) for xx in self.hdr.keys()])))
+                            (key, "', '".join([str(xx) for xx in list(self.hdr.keys())])))
         else:
             val = self.hdr[key]
         return filterfunc(val)
-    
+
+
     def get_archive(self):
         if self.ar is None:
             import psrchive
             self.ar = psrchive.Archive_load(self.fn)
         return self.ar
+
 
     def get_usable_bw(self):
         ar = self.get_archive()
@@ -1375,12 +1381,14 @@ class DefaultOptions(optparse.OptionParser):
     def __init__(self, *args, **kwargs):
         optparse.OptionParser.__init__(self, *args, **kwargs)
 
+
     def parse_args(self, *args, **kwargs):
         # Add debug group just before parsing so it is the last set of
         # options displayed in help text
         self.add_standard_group()
         self.add_debug_group()
         return optparse.OptionParser.parse_args(self, *args, **kwargs)
+
 
     def add_standard_group(self):
         group = optparse.OptionGroup(self, "Standard Options", \
@@ -1412,6 +1420,7 @@ class DefaultOptions(optparse.OptionParser):
                                 ((config.excessive_verbosity and "on") or "off"))
         self.add_option_group(group)
 
+
     def add_debug_group(self):
         group = optparse.OptionGroup(self, "Debug Options", \
                     "The following options turn on various debugging " \
@@ -1440,37 +1449,46 @@ class DefaultOptions(optparse.OptionParser):
                             "and then exit.")
         self.add_option_group(group)
 
+
     def increment_config(self, option, opt_str, value, parser, param):
         val = getattr(config, param)
         setattr(config, param, val+1)
+
 
     def decrement_config(self, option, opt_str, value, parser, param):
         val = getattr(config, param)
         setattr(config, param, val-1)
 
+
     def toggle_config(self, option, opt_str, value, parser, param):
         val = getattr(config, param)
         setattr(config, param, not val)
 
+
     def override_config(self, option, opt_str, value, parser):
         config.cfg.set_override_config(option.dest, value)
+
 
     def set_override_config(self, option, opt_str, value, parser):
         config.cfg.set_override_config(option.dest, True)
 
+
     def unset_override_config(self, option, opt_str, value, parser):
         config.cfg.set_override_config(option.dest, False)
     
+
     def debug_callback(self, option, opt_str, value, parser):
         config.debug.set_mode_on(value)
+
 
     def debugall_callback(self, option, opt_str, value, parser):
         config.debug.set_allmodes_on()
 
+
     def list_debug(self, options, opt_str, value, parser):
-        print "Available debugging modes:"
+        print("Available debugging modes:")
         for name, desc in config.debug.modes:
-            print "    %s: %s" % (name, desc)
+            print("    {0}: {1}" % (name, desc))
         sys.exit(1)
 
 
@@ -1480,6 +1498,7 @@ class DefaultArguments(argparse.ArgumentParser):
         self.added_debug_group = False
         self.added_file_group = False
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
+
 
     def parse_args(self, *args, **kwargs):
         if not self._subparsers:
@@ -1491,6 +1510,7 @@ class DefaultArguments(argparse.ArgumentParser):
         if not self._subparsers:
             set_warning_mode(args.warnmode)
         return args
+
 
     def add_file_selection_group(self):
         if self.added_file_group:
@@ -1518,6 +1538,7 @@ class DefaultArguments(argparse.ArgumentParser):
                                 "expanded by the shell prematurely. (Default: " \
                                 "exclude any files.)")
         self.added_file_group = True
+
 
     def add_standard_group(self):
         if self.added_std_group:
@@ -1562,6 +1583,7 @@ class DefaultArguments(argparse.ArgumentParser):
                                 "each warning.)")
         self.added_std_group = True
 
+
     def add_debug_group(self):
         if self.added_debug_group:
             # Debug group has already been added
@@ -1593,55 +1615,67 @@ class DefaultArguments(argparse.ArgumentParser):
                                 ((config.helpful_debugging and "on") or "off"))
         self.added_debug_group = True
 
+
     class TurnUpVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.verbosity += 1
+
 
     class TurnDownVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.verbosity -= 1
  
+
     class SetVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.verbosity = values[0]
+
 
     class SetLogVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.log_verbosity = values[0]
 
+
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
             config.debug.set_mode_on(values[0])
+
 
     class SetAllDebugModes(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
             config.debug.set_allmodes_on()
 
+
     class ListDebugModes(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
-            print "Available debugging modes:"
+            print("Available debugging modes:")
             for name, desc in config.debug.modes:
                 if desc is None:
                     continue
-                print "    %s: %s" % (name, desc)
+                print("    {0}: {1}".format(name, desc))
             sys.exit(1)
+
 
     class ToggleConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             val = getattr(config, self.dest)
             setattr(config, self.dest, not val)
     
+
     class OverrideConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.cfg.set_override_config(self.dest, values)
+
 
     class SetOverrideConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.cfg.set_override_config(self.dest, True)
 
+
     class UnsetOverrideConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.cfg.set_override_config(self.dest, False)
+
 
     class GetFilesFromGlobAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
