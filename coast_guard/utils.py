@@ -639,7 +639,7 @@ def get_header_vals(fn, hdritems):
                          "should not perform and assignments!")
     cmd = ["vap", "-n", "-c", hdrstr, fn]
     outstr, errstr = execute(cmd)
-    outvals = outstr.split()[1:] # First value is filename (we don't need it)
+    outvals = outstr.decode().split()[1:] # First value is filename (we don't need it)
     itoa_error = b"itoa_code no alias found for"
     if errstr.find(itoa_error) == 0:
         warnings.warn("PSRCHIVE reports unknown itoa_code. Check observatory alias " \
