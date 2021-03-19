@@ -179,7 +179,7 @@ def main():
         arf = utils.ArchiveFile(sys.argv[1])
         cfg.set_override_config("something", 'newvalue!')
         cfg.load_configs_for_archive(arf)
-    print cfg.get()
+    print(cfg.get())
 
 
 if __name__ == '__main__':
