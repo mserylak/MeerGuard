@@ -77,17 +77,17 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
                                aliases=[],
                                nullable=True,
                                help="Filename for a template to use instead of self-standard")
-        self.configs.add_param('plot', config_types.BoolVal,
-                               aliases=['plot'],
-                               nullable=True,
-                               help="Boolean to choose whether to plot figures for debugging purposes")
+#        self.configs.add_param('plot', config_types.BoolVal,
+#                               aliases=['plot'],
+#                               nullable=True,
+#                               help="Boolean to choose whether to plot figures for debugging purposes")
         self.parse_config_string(config.cfg.surgical_default_params)
 
 
     def _clean(self, ar):
-        plot = self.configs.plot
-        if plot:
-            import matplotlib.pyplot as plt
+#        plot = self.configs.plot
+#        if plot:
+#            import matplotlib.pyplot as plt
         patient = ar.clone()
         patient.pscrunch()
         patient.remove_baseline()
@@ -139,9 +139,9 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             print('Template phase offset = {0}'.format(round(phase_offset, 3)))
 
         print('Removing profile from patient')
-        if plot:
-            preop_patient = patient.clone()
-            preop_weights = preop_patient.get_weights()
+#        if plot:
+#            preop_patient = patient.clone()
+#            preop_weights = preop_patient.get_weights()
         clean_utils.remove_profile_inplace(patient, template, phase_offset)
 
         print('Accessing weights and applying to patient')
@@ -153,17 +153,17 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
         # Get data (select first polarization - recall we already P-scrunched)
         data = patient.get_data()[:,0,:,:]
         data = clean_utils.apply_weights(data, weights)
-        if plot:
-            preop_data = preop_patient.get_data()[:,0,:,:]
-            preop_patient = []  # clear for the sake of memory
-            preop_data = clean_utils.apply_weights(preop_data, weights)
+#        if plot:
+#            preop_data = preop_patient.get_data()[:,0,:,:]
+#            preop_patient = []  # clear for the sake of memory
+#            preop_data = clean_utils.apply_weights(preop_data, weights)
 
         # Mask profiles where weight is 0
         mask_2d = np.bitwise_not(np.expand_dims(weights, 2).astype(bool))
         mask_3d = mask_2d.repeat(ar.get_nbin(), axis=2)
         data = np.ma.masked_array(data, mask=mask_3d)
-        if plot:
-            preop_data = np.ma.masked_array(preop_data, mask=mask_3d)        
+#        if plot:
+#            preop_data = np.ma.masked_array(preop_data, mask=mask_3d)        
 
         print('Masking on-pulse region as determined from template')
         # consider residual only in off-pulse region
@@ -180,28 +180,28 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
         masked_std = np.ma.std(masked_template)
         # use this std of masked data as cutoff
         masked_template = np.ma.masked_greater(template_rot, np.median(template_rot) + masked_std)
-        if plot:
-            plt.figure(figsize=(10, 5))
-            plt.subplot(1, 2, 1)
-            plt.plot(np.apply_over_axes(np.sum, preop_data, tuple(range(data.ndim - 1))).squeeze(), alpha=1)
-            # Do fit again to scale template
-            subchan, err, params = clean_utils.remove_profile1d(np.apply_over_axes(np.sum, preop_data, (0, 1)).squeeze(), 0, 0, template_rot, 0, return_params=True)
-            # plt.plot(params[0]*template_rot + params[1], alpha=0.5)
-            # plt.plot(params[0]*masked_template + params[1], 'k')
-            plt.plot(params[0]*template_rot, alpha=0.5)
-            plt.plot(params[0]*masked_template, 'k')
-            plt.legend(('Pre-op data', 'Scaled and rotated template', 'Masked template'))            
+#        if plot:
+#            plt.figure(figsize=(10, 5))
+#            plt.subplot(1, 2, 1)
+#            plt.plot(np.apply_over_axes(np.sum, preop_data, tuple(range(data.ndim - 1))).squeeze(), alpha=1)
+#            # Do fit again to scale template
+#            subchan, err, params = clean_utils.remove_profile1d(np.apply_over_axes(np.sum, preop_data, (0, 1)).squeeze(), 0, 0, template_rot, 0, return_params=True)
+#            # plt.plot(params[0]*template_rot + params[1], alpha=0.5)
+#            # plt.plot(params[0]*masked_template + params[1], 'k')
+#            plt.plot(params[0]*template_rot, alpha=0.5)
+#            plt.plot(params[0]*masked_template, 'k')
+#            plt.legend(('Pre-op data', 'Scaled and rotated template', 'Masked template'))
         # Loop through chans and subints to mask on-pulse phase bins
         for ii in range(0, np.shape(data)[0]):
             for jj in range(0, np.shape(data)[1]):
                   data.mask[ii, jj, :] = masked_template.mask
         data = np.ma.masked_array(data, mask=data.mask)
 
-        if plot:
-            plt.subplot(1, 2, 2)
-            plt.plot(np.apply_over_axes(np.ma.sum, data, tuple(range(data.ndim - 1))).squeeze())
-            plt.title("Residual data")
-            plt.savefig('data_and_template.png')
+#        if plot:
+#            plt.subplot(1, 2, 2)
+#            plt.plot(np.apply_over_axes(np.ma.sum, data, tuple(range(data.ndim - 1))).squeeze())
+#            plt.title("Residual data")
+#            plt.savefig('data_and_template.png')
 
         print('Calculating robust statistics to determine where RFI removal is required')
         # RFI-ectomy must be recommended by average of tests
