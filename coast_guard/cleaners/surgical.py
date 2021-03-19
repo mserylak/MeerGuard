@@ -174,7 +174,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
         else:
             template_1D = template
         # Rotate template by apropriate amount
-        template_rot = clean_utils.fft_rotate(template_1D, phase_guess).squeeze()
+        template_rot = clean_utils.fft_rotate(template_1D, phase_offsets).squeeze()
         # masked_template = np.ma.masked_greater(template_rot, np.min(template_rot) + 0.01*np.ptp(template_rot))
         masked_template = np.ma.masked_greater(template_rot, np.median(template_rot))
         masked_std = np.ma.std(masked_template)
