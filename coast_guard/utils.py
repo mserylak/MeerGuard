@@ -1081,7 +1081,7 @@ def get_prefname(name):
             cmd = ['psrcat', '-nohead', '-nonumber', '-c', 'PSRJ PSRB', \
                             '-o', 'short', '-null', '', search]
             stdout, stderr = execute(cmd)
-            lines = [line for line in stdout.split('\n') \
+            lines = [line for line in stdout.decode().split('\n') \
                         if line.strip() and not line.startswith("WARNING:")]
             names = [line.strip().split() for line in lines]
         except errors.SystemCallError:
