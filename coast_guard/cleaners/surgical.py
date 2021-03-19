@@ -94,7 +94,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
 
         # Remove profile from dedispersed data
         patient.dedisperse()
-        print('Loading template')
+        utils.print_info('Loading template', 2)
         data = patient.get_data().squeeze()
         if self.configs.template is None:
             # Sum over all axes except last, which is phase bins
@@ -107,19 +107,19 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             template_ar.remove_baseline()
             template_ar.dedisperse()
             if len(template_ar.get_frequencies()) > 1 and len(template_ar.get_frequencies()) < len(patient.get_frequencies()):
-                print("Template channel number doesn't match data... f-scrunching!")
+                utils.print_info("Template channel number doesn't match data... f-scrunching!", 2)
                 template_ar.fscrunch()
             template_data = template_ar.get_data().squeeze()
             template = np.apply_over_axes(np.sum, template_data, tuple(range(template_data.ndim - 1))).squeeze()
             # make sure template is 1D
             if len(np.shape(template)) > 1:  # sum over frequencies too
                 template_ar.fscrunch()  
-                print("2D template found. Assuming it has same frequency coverage and channels as data!")
+                utils.print_info("2D template found. Assuming it has same frequency coverage and channels as data!", 2)
                 template_phs = np.apply_over_axes(np.sum, template_data, tuple(range(template_data.ndim - 1))).squeeze()
             else:
                 template_phs = template
 
-        print('Estimating template and profile phase offset')
+        utils.print_info('Estimating template and profile phase offset', 2)
         if self.configs.template is None:
             phase_offset = 0
         else:
@@ -127,7 +127,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             # Get profile data of full obs
             profile = np.apply_over_axes(np.sum, data, tuple(range(data.ndim - 1))).squeeze()
             if np.shape(template_phs) != np.shape(profile):
-                print('Template and profile have different numbers of phase bins')
+                utils.print_info('Template and profile have different numbers of phase bins', 2)
             #err = (lambda (amp, phs, base): amp*clean_utils.fft_rotate(template_phs, phs) + base - profile)
             err = (lambda amp_phs: amp_phs[0]*clean_utils.fft_rotate(template_phs, amp_phs[1]) - profile)
             amp_guess = np.median(profile)/np.median(template_phs)
@@ -136,15 +136,15 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
             #params, status = leastsq(err, [amp_guess, phase_guess, np.min(profile) - np.min(template_phs)])
             params, status = leastsq(err, amp_phs_guess)
             phase_offset = params[1]
-            print('Template phase offset = {0}'.format(round(phase_offset, 3)))
+            utils.print_info('Template phase offset = {0}'.format(round(phase_offset, 3)), 2)
 
-        print('Removing profile from patient')
+        utils.print_info('Removing profile from patient', 2)
 #        if plot:
 #            preop_patient = patient.clone()
 #            preop_weights = preop_patient.get_weights()
         clean_utils.remove_profile_inplace(patient, template, phase_offset)
 
-        print('Accessing weights and applying to patient')
+        utils.print_info('Accessing weights and applying to patient', 2)
         # re-set DM to 0
         # patient.dededisperse()
 
@@ -165,16 +165,16 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
 #        if plot:
 #            preop_data = np.ma.masked_array(preop_data, mask=mask_3d)        
 
-        print('Masking on-pulse region as determined from template')
+        utils.print_info('Masking on-pulse region as determined from template', 2)
         # consider residual only in off-pulse region
         if len(np.shape(template)) > 1:  # sum over frequencies
-            print('Estimating on-pulse region by f-scrunching 2D template')
+            utils.print_info('Estimating on-pulse region by f-scrunching 2D template', 2)
             template_ar.fscrunch()
             template_1D = np.apply_over_axes(np.sum, template_ar.get_data(), (0, 1)).squeeze()
         else:
             template_1D = template
         # Rotate template by apropriate amount
-        template_rot = clean_utils.fft_rotate(template_1D, phase_offsets).squeeze()
+        template_rot = clean_utils.fft_rotate(template_1D, phase_offset).squeeze()
         # masked_template = np.ma.masked_greater(template_rot, np.min(template_rot) + 0.01*np.ptp(template_rot))
         masked_template = np.ma.masked_greater(template_rot, np.median(template_rot))
         masked_std = np.ma.std(masked_template)
@@ -203,7 +203,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
 #            plt.title("Residual data")
 #            plt.savefig('data_and_template.png')
 
-        print('Calculating robust statistics to determine where RFI removal is required')
+        utils.print_info('Calculating robust statistics to determine where RFI removal is required', 2)
         # RFI-ectomy must be recommended by average of tests
         # BWM: Ok, so this is where the magical stuff actually happens - need to know actually WHAT are the comprehensive stats
         # DJR: At this stage the stats are; (found to work well experimentally) 
@@ -221,7 +221,7 @@ class SurgicalScrubCleaner(cleaners.BaseCleaner):
                                     subint_numpieces=self.configs.subint_numpieces, \
                                     )
 
-        print('Applying RFI masking weights to archive')
+        utils.print_info('Applying RFI masking weights to archive', 2)
         for (isub, ichan) in np.argwhere(avg_test_results>=1):
             # Be sure to set weights on the original archive, and
             # not the clone we've been working with.
