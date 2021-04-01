@@ -33,7 +33,9 @@ def read_file(fn, required=False):
             raise ValueError("Coast Guard configuration files must "
                              "end with the extention '.cfg'.")
         key = os.path.split(fn)[-1][:-4]
-        exec(compile(open(fn, "r").read(), fn, 'exec'), {}, cfgdict)
+        file_object = open(fn, "r")
+        exec(compile(file_object.read(), fn, 'exec'), {}, cfgdict)
+        file_object.close()
     elif required:
             raise ValueError("Configuration file (%s) doesn't exist "
                              "and is required!" % fn)
